@@ -482,6 +482,7 @@ router.get("/refunds/net-spend", authenticateUser, async (req, res, next) => {
  */
 router.post('/manual', authenticateUser, async (req, res) => {
   try {
+    console.log('POST /transactions/manual body:', JSON.stringify(req.body));
     const { user_id } = req.user;
     const { amount, merchant = 'Cash Spend', notes, transaction_time } = req.body;
 
