@@ -24,7 +24,17 @@ module.exports.parseMessage = (text) => {
 
   // Extract merchant
   const merchantMatch = text.match(regex.merchant);
-  const merchant = merchantMatch ? merchantMatch[2].trim() : "UNKNOWN";
+  let merchant = merchantMatch ? merchantMatch[2].trim() : "UNKNOWN";
+
+  // Post-process merchant: strip common trailing stopwords/patterns and excessive filler words
+  if (merchant && merchant !== "UNKNOWN") {
+    // Remove common patterns like 'is', 'on', 'type', 'txn' that leak into merchant capture
+    merchant = merchant.replace(/\b(is|on|type|txn|ref|refunded|using|via|a|the)\b/ig, "").trim();
+    // Remove trailing non-alphanumeric characters
+    merchant = merchant.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "").trim();
+    // Collapse multiple spaces
+    merchant = merchant.replace(/\s{2,}/g, " ");
+  }
 
   // Extract balance if present (SMS authoritative source)
   let balance = null;
@@ -67,6 +77,8 @@ module.exports.parseMessage = (text) => {
     type,
     bank_name,
     merchant,
+    // Is this likely a card payment? Helps frontend separate credit-card transactions
+    is_card_payment: regex.credit_card.test(text),
     receiver_name,
     sender_name,
     account_holder,
