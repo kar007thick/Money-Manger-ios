@@ -2,10 +2,14 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // ======================
-    // 1️⃣ INGEST (Phone)
-    // ======================
-    if (request.method === "POST" && url.pathname === "/") {
+    // ==============================
+    // 1️⃣ INGEST ENDPOINT (iOS)
+    // ==============================
+    if (url.pathname === "/") {
+      if (request.method !== "POST") {
+        return new Response("Only POST allowed", { status: 405 });
+      }
+
       let body;
       try {
         body = await request.json();
@@ -16,9 +20,15 @@ export default {
       const { user_id, raw_message, received_at, source } = body;
 
       if (!user_id || !raw_message || !received_at) {
-        return new Response("Missing required fields", { status: 400 });
+        return new Response("Missing required fields: user_id, raw_message, received_at", { status: 400 });
       }
 
+      // Validate raw_message is string and has content
+      if (typeof raw_message !== 'string' || raw_message.trim().length === 0) {
+        return new Response("raw_message must be a non-empty string", { status: 400 });
+      }
+
+      // Create dedup hash
       const hashBuffer = await crypto.subtle.digest(
         "SHA-256",
         new TextEncoder().encode(
@@ -30,112 +40,128 @@ export default {
         .map(b => b.toString(16).padStart(2, "0"))
         .join("");
 
+      console.log(`[SMS-INGEST] Received message - user: ${user_id}, hash: ${key.substring(0, 16)}...`);
+
+      // Check if already ingested
       const existing = await env.SMS_KV.get(key);
       if (existing) {
-        return Response.json({ ok: true, deduped: true });
+        console.log(`[SMS-INGEST] ✓ Duplicate detected - hash: ${key.substring(0, 16)}...`);
+        return Response.json({ 
+          ok: true, 
+          deduped: true,
+          message: "Message already ingested"
+        });
       }
+
+      // Store in KV with 7-day TTL
+      const payload = {
+        user_id,
+        raw_message,
+        received_at,
+        source: source || "ios_shortcut",
+        ingested_at: new Date().toISOString(),
+        dedup_hash: key
+      };
 
       await env.SMS_KV.put(
         key,
-        JSON.stringify({
-          user_id,
-          raw_message,
-          received_at,
-          source: source || "ios",
-          ingested_at: Date.now()
-        }),
-        { expirationTtl: 60 * 60 * 24 * 7 }
+        JSON.stringify(payload),
+        { expirationTtl: 60 * 60 * 24 * 7 } // 7 days
       );
 
-      return Response.json({ ok: true });
+      console.log(`[SMS-INGEST] ✓ Message stored - length: ${raw_message.length} chars`);
+
+      return Response.json({ 
+        ok: true, 
+        deduped: false,
+        message: "Message ingested successfully",
+        hash: key.substring(0, 16)
+      });
     }
 
-    // ======================
-    // 2️⃣ FLUSH (Cron)
-    // ======================
-    if (url.pathname === "/flush") {
-      console.log("🔄 FLUSH START: Checking KV for messages...");
-      const keys = await env.SMS_KV.list({ limit: 50 });
-      console.log(`📦 Found ${keys.keys.length} messages in KV`);
-
-      if (!keys.keys.length) {
-        console.log("✅ No messages to flush");
-        return Response.json({ ok: true, message: "No messages" });
+    // ==============================
+    // 2️⃣ POLL ENDPOINT (Render backend)
+    // ==============================
+    if (url.pathname === "/poll") {
+      // Validate API key
+      const apiKey = request.headers.get("x-api-key");
+      const expectedKey = env.POLL_API_KEY || "ios_secret_key_123";
+      
+      if (!apiKey || apiKey !== expectedKey) {
+        console.warn(`[SMS-POLL] ❌ Unauthorized poll attempt`);
+        return new Response("Unauthorized", { status: 401 });
       }
 
-      const batch = [];
+      console.log(`[SMS-POLL] Poll request received`);
 
-      for (const key of keys.keys) {
-        const value = await env.SMS_KV.get(key.name);
-        if (value) {
-          console.log(`✓ Loaded KV entry: ${key.name}`);
-          batch.push({
-            id: key.name,
-            data: JSON.parse(value)
-          });
+      try {
+        // List all pending messages (limit 100)
+        const list = await env.SMS_KV.list({ limit: 100 });
+        const messages = [];
+
+        for (const key of list.keys) {
+          const value = await env.SMS_KV.get(key.name);
+          if (value) {
+            try {
+              messages.push({
+                id: key.name,
+                data: JSON.parse(value)
+              });
+            } catch (parseErr) {
+              console.error(`[SMS-POLL] Failed to parse KV value for key: ${key.name}`);
+            }
+          }
         }
-      }
 
-      // Build full ingest URL from base to keep env configurable
-      let ingestUrl = env.RENDER_URL;
-      try {
-        const base = new URL(env.RENDER_URL);
-        // Always point to backend ingest endpoint regardless of base path
-        base.pathname = "/ingest/transaction";
-        base.search = "";
-        ingestUrl = base.toString();
-      } catch {
-        // If RENDER_URL is not a valid URL, fall back to raw value
-      }
+        console.log(`[SMS-POLL] ✓ Returning ${messages.length} pending messages`);
 
-      console.log(`📤 Sending ${batch.length} messages to: ${ingestUrl}`);
-      console.log(`🔐 Using API key header: x-api-key`);
-
-      try {
-        const renderResponse = await fetch(ingestUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": env.RENDER_API_KEY
-          },
-          body: JSON.stringify({ messages: batch })
+        return Response.json({ 
+          ok: true,
+          count: messages.length,
+          messages 
         });
-
-        console.log(`📬 Render response status: ${renderResponse.status}`);
-        const responseText = await renderResponse.text();
-        console.log(`📬 Render response: ${responseText}`);
-
-        if (!renderResponse.ok) {
-          throw new Error(`Render rejected batch: ${renderResponse.status} ${responseText}`);
-        }
-
-        // Delete after successful push
-        console.log(`🗑️  Deleting ${batch.length} messages from KV...`);
-        for (const msg of batch) {
-          await env.SMS_KV.delete(msg.id);
-          console.log(`  ✓ Deleted: ${msg.id}`);
-        }
-
-        console.log(`✅ FLUSH COMPLETE: ${batch.length} messages pushed and cleared`);
-        return Response.json({ ok: true, pushed: batch.length });
-
       } catch (err) {
-        console.error(`❌ FLUSH ERROR: ${err.message}`);
-        return Response.json({
-          ok: false,
-          error: err.message,
-          batch_size: batch.length
+        console.error(`[SMS-POLL] Error listing KV messages:`, err);
+        return Response.json({ 
+          ok: false, 
+          error: err.message 
         }, { status: 500 });
       }
     }
 
-    return new Response("Not Found", { status: 404 });
-  },
+    // ==============================
+    // 3️⃣ DELETE ENDPOINT (cleanup after processing)
+    // ==============================
+    if (url.pathname === "/delete" && request.method === "POST") {
+      const apiKey = request.headers.get("x-api-key");
+      const expectedKey = env.POLL_API_KEY || "ios_secret_key_123";
+      
+      if (!apiKey || apiKey !== expectedKey) {
+        return new Response("Unauthorized", { status: 401 });
+      }
 
-  // ======================
-  // 3️⃣ CRON TRIGGER
-  // ======================
-  async scheduled(event, env, ctx) {
-    await fetch("https://sms-ingest.karthickrajab02.workers.dev/flush");
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return new Response("Invalid JSON", { status: 400 });
+      }
+
+      const { id } = body;
+      if (!id) {
+        return new Response("Missing id", { status: 400 });
+      }
+
+      try {
+        await env.SMS_KV.delete(id);
+        console.log(`[SMS-DELETE] ✓ Deleted key: ${id.substring(0, 16)}...`);
+        return Response.json({ ok: true, message: "Message deleted" });
+      } catch (err) {
+        console.error(`[SMS-DELETE] Failed to delete:`, err);
+        return Response.json({ ok: false, error: err.message }, { status: 500 });
+      }
+    }
+
+    return new Response("Not Found", { status: 404 });
   }
 };

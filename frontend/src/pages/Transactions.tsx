@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { TrendingUp, TrendingDown, Link2, Unlink2, RotateCcw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Link2, Unlink2, RotateCcw, Upload } from 'lucide-react';
 import { TransactionDetail } from '../components/TransactionDetail';
+import { StatementImport } from '../components/StatementImport';
 import { Transaction } from '../types';
 import { updateTransaction, reparseTransactions } from '../services/api';
 
@@ -12,9 +13,13 @@ export const Transactions = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showReparseModal, setShowReparseModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedTransactionIds, setSelectedTransactionIds] = useState<Set<string>>(new Set());
   const [isReparsing, setIsReparsing] = useState(false);
   const [reparseResult, setReparseResult] = useState<any>(null);
+  const [selectedImportAccountId, setSelectedImportAccountId] = useState<string>('');
+
+  const importAccounts = accounts.filter((a) => a.accountType !== 'credit_card');
 
   const sortedTransactions = [...transactions].sort(
     (a, b) =>
@@ -105,25 +110,32 @@ export const Transactions = () => {
     setSelectedTransactionIds(newSet);
   };
 
+  const openImportPanel = () => {
+    if (!selectedImportAccountId && importAccounts.length > 0) {
+      setSelectedImportAccountId(importAccounts[0].id);
+    }
+    setShowImportModal(!showImportModal);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Transactions</h2>
-        <p className="text-gray-600">View all your recent transactions. Click on any transaction to view details.</p>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Transactions</h2>
+        <p className="text-gray-600 dark:text-gray-300">View all your recent transactions. Click on any transaction to view details.</p>
       </div>
 
       {/* Re-parse Controls */}
-      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="mb-6 rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-900 p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           <div>
-            <h3 className="font-semibold text-blue-900 mb-1">Transaction Parser</h3>
-            <p className="text-sm text-blue-700">Re-parse transactions to correct merchant names, bank names, and categories</p>
+            <h3 className="font-semibold text-cyan-100 mb-1">Transaction Parser</h3>
+            <p className="text-sm text-cyan-100/80">Re-parse transactions to correct merchant names, bank names, and categories</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleReparseAll}
               disabled={isReparsing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-cyan-400 text-slate-950 font-medium rounded-lg hover:bg-cyan-300 disabled:bg-gray-400 transition-colors whitespace-nowrap"
             >
               <RotateCcw size={16} className={isReparsing ? 'animate-spin' : ''} />
               {isReparsing ? 'Re-parsing...' : 'Re-parse All'}
@@ -131,7 +143,7 @@ export const Transactions = () => {
             <button
               onClick={() => setShowReparseModal(!showReparseModal)}
               disabled={isReparsing}
-              className="px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 transition-colors whitespace-nowrap"
+              className="px-4 py-2 bg-transparent border border-cyan-300/50 text-cyan-100 rounded-lg hover:bg-cyan-500/10 disabled:opacity-50 transition-colors whitespace-nowrap"
             >
               {selectedTransactionIds.size > 0 ? `Selected (${selectedTransactionIds.size})` : 'Select & Reparse'}
             </button>
@@ -139,14 +151,14 @@ export const Transactions = () => {
         </div>
         
         {showReparseModal && (
-          <div className="mt-4 p-3 bg-white rounded border border-blue-200">
-            <p className="text-sm text-gray-700 mb-2">
+          <div className="mt-4 p-3 bg-black/20 rounded border border-cyan-500/20">
+            <p className="text-sm text-cyan-100/80 mb-2">
               {selectedTransactionIds.size} of {transactions.length} selected
             </p>
             <button
               onClick={handleReparseSelected}
               disabled={isReparsing || selectedTransactionIds.size === 0}
-              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 text-sm"
+              className="px-3 py-1 bg-emerald-400 text-slate-950 font-medium rounded hover:bg-emerald-300 disabled:bg-gray-400 text-sm"
             >
               Re-parse {selectedTransactionIds.size} Selected
             </button>
@@ -154,10 +166,53 @@ export const Transactions = () => {
         )}
 
         {reparseResult && (
-          <div className="mt-3 p-3 bg-white rounded border border-green-200">
-            <p className="text-sm font-semibold text-green-700">
+          <div className="mt-3 p-3 bg-emerald-500/10 rounded border border-emerald-500/30">
+            <p className="text-sm font-semibold text-emerald-100">
               ✅ Re-parsed: {reparseResult.successCount} success, {reparseResult.errorCount} errors
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Statement Import Section */}
+      <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-900 p-4 shadow-xl shadow-emerald-900/10">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-emerald-200 mb-1">Import from Bank Statement</h3>
+            <p className="text-sm text-emerald-100/80">Upload XLS, XLSX, or PDF and merge transactions cleanly by statement range.</p>
+          </div>
+          <button
+            onClick={openImportPanel}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-slate-950 font-medium rounded-lg hover:bg-emerald-400 transition-colors whitespace-nowrap"
+          >
+            <Upload size={16} />
+            Import Statement
+          </button>
+        </div>
+
+        {showImportModal && (
+          <div className="mt-4 p-4 bg-slate-900/60 rounded-xl border border-emerald-500/20">
+            <div className="mb-4">
+              <label className="block text-xs uppercase tracking-wide text-emerald-100/80 mb-1">Import account</label>
+              <select
+                value={selectedImportAccountId}
+                onChange={(e) => setSelectedImportAccountId(e.target.value)}
+                className="w-full rounded-lg border border-emerald-500/30 bg-slate-950 text-emerald-100 px-3 py-2 text-sm"
+              >
+                {importAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.bankName} - {account.accountNumber}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <StatementImport
+              accountId={selectedImportAccountId || importAccounts[0]?.id || ''}
+              onSuccess={() => {
+                setShowImportModal(false);
+                loadTransactions();
+              }}
+            />
           </div>
         )}
       </div>
@@ -169,8 +224,8 @@ export const Transactions = () => {
               onClick={() => setSelectedCategory('')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                 selectedCategory === ''
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-violet-500 text-white'
+                  : 'bg-slate-200 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-slate-300 dark:hover:bg-slate-700'
               }`}
             >
               All
@@ -181,8 +236,8 @@ export const Transactions = () => {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                   selectedCategory === cat
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'bg-violet-500 text-white'
+                    : 'bg-slate-200 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-slate-300 dark:hover:bg-slate-700'
                 }`}
               >
                     <span className="truncate max-w-[120px] inline-block align-middle">{cat}</span>
@@ -193,8 +248,8 @@ export const Transactions = () => {
       )}
 
       {filteredTransactions.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <p className="text-gray-500">No transactions found</p>
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
+          <p className="text-gray-500 dark:text-gray-300">No transactions found</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -205,7 +260,7 @@ export const Transactions = () => {
             return (
               <div
                 key={txn.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center justify-between gap-4 mb-2">
                   {showReparseModal && (
@@ -225,7 +280,7 @@ export const Transactions = () => {
                   >
                     <div
                       className={`p-2 rounded-lg flex-shrink-0 ${
-                        isDebit ? 'bg-red-100' : 'bg-green-100'
+                        isDebit ? 'bg-red-100 dark:bg-red-500/20' : 'bg-green-100 dark:bg-green-500/20'
                       }`}
                     >
                       {isDebit ? (
@@ -236,10 +291,10 @@ export const Transactions = () => {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">
                         {txn.merchantName}
                       </p>
-                      <p className="text-sm text-gray-600 truncate">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
                         {account?.bankName} • {account?.accountNumber}
                       </p>
                     </div>
@@ -254,14 +309,14 @@ export const Transactions = () => {
                       {isDebit ? '-' : '+'}
                       {formatCurrency(txn.amount)}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(new Date(txn.transactionDate))}
                     </p>
                   </div>
                 </div>
 
                 {(txn.category || txn.tags || txn.refundLinkedId) && (
-                  <div className="flex items-center gap-2 text-xs text-gray-600 px-4 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 px-4 pt-2 border-t border-gray-100 dark:border-slate-800">
                     {txn.category && (
                       <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">
                         {txn.category}

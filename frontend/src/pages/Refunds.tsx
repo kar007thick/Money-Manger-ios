@@ -72,39 +72,39 @@ export const Refunds = () => {
   const creditTransactions = transactions.filter(t => t.type === 'credit');
 
   if (loading) {
-    return <div className="p-4 text-center">Loading refund data...</div>;
+    return <div className="p-4 text-center text-gray-600 dark:text-gray-300">Loading refund data...</div>;
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Refunds</h2>
-        <p className="text-gray-600">Link refunds to original transactions and track net spending.</p>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Refunds</h2>
+        <p className="text-gray-600 dark:text-gray-300">Link refunds to original transactions and track net spending.</p>
       </div>
 
       {netSpend && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-sm text-gray-600 mb-2">Total Debits</p>
-            <p className="text-2xl font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Total Debits</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {formatCurrency(netSpend.totalDebits)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-sm text-gray-600 mb-2">Total Refunded</p>
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Total Refunded</p>
             <p className="text-2xl font-bold text-green-600">
               {formatCurrency(netSpend.totalRefunded)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-sm text-gray-600 mb-2">Net Spend</p>
-            <p className="text-2xl font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Net Spend</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {formatCurrency(netSpend.netSpend)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-sm text-gray-600 mb-2">Refund Pairs</p>
-            <p className="text-2xl font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Refund Pairs</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {netSpend.refundCount}
             </p>
           </div>
@@ -114,25 +114,25 @@ export const Refunds = () => {
       <div className="mb-8">
         <button
           onClick={() => setShowLinkForm(!showLinkForm)}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="bg-violet-500 text-white px-6 py-2 rounded-lg hover:bg-violet-400 transition"
         >
           {showLinkForm ? 'Cancel' : 'Link Refund'}
         </button>
       </div>
 
       {showLinkForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Link Refund to Transaction</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Link Refund to Transaction</h3>
           <form onSubmit={handleLinkRefund}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Original Transaction (Debit)
                 </label>
                 <select
                   value={selectedOriginal}
                   onChange={(e) => setSelectedOriginal(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg"
                 >
                   <option value="">Select transaction</option>
                   {debitTransactions.map(t => (
@@ -143,13 +143,13 @@ export const Refunds = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Refund Transaction (Credit)
                 </label>
                 <select
                   value={selectedRefund}
                   onChange={(e) => setSelectedRefund(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg"
                 >
                   <option value="">Select refund</option>
                   {creditTransactions.map(t => (
@@ -162,7 +162,7 @@ export const Refunds = () => {
             </div>
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              className="bg-violet-500 text-white px-6 py-2 rounded-lg hover:bg-violet-400 transition"
             >
               Link Refund
             </button>
@@ -171,41 +171,41 @@ export const Refunds = () => {
       )}
 
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Linked Refunds</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Linked Refunds</h3>
         {refundPairs.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <p className="text-gray-500">No linked refunds yet</p>
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
+            <p className="text-gray-500 dark:text-gray-300">No linked refunds yet</p>
           </div>
         ) : (
           <div className="space-y-4">
             {refundPairs.map(pair => (
               <div
                 key={`${pair.original.id}-${pair.refund.id}`}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition"
+                className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 hover:shadow-md transition"
               >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center mb-4">
                   <div>
-                    <p className="text-sm text-gray-600">Original (Debit)</p>
-                    <p className="font-semibold text-gray-900">{pair.original.merchant}</p>
-                    <p className="text-sm text-gray-600">{pair.original.type}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Original (Debit)</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{pair.original.merchant}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{pair.original.type}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {formatCurrency(pair.original.amount)}
                     </p>
-                    <p className="text-xs text-gray-500">↕️ Linked</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">↕️ Linked</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Refund (Credit)</p>
-                    <p className="font-semibold text-gray-900">{pair.refund.merchant}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Refund (Credit)</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{pair.refund.merchant}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       {new Date(pair.refund.transactionTime).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-slate-800">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Linked on {new Date(pair.linkedDate).toLocaleDateString()}
                   </p>
                   <button
