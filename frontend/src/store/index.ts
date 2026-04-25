@@ -2,6 +2,25 @@ import { create } from 'zustand';
 import { Account, Transaction } from '../types';
 import { getAccounts, getTransactions, triggerBackgroundSync } from '../services/api';
 
+const ACCOUNTS_CACHE_KEY = 'mm_accounts_cache_v1';
+const TRANSACTIONS_CACHE_KEY = 'mm_transactions_cache_v1';
+const LAST_SYNC_KEY = 'mm_last_sync_v1';
+
+const readCache = <T>(key: string, fallback: T): T => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const writeCache = (key: string, value: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+};
+
 interface Store {
   accounts: Account[];
   transactions: Transaction[];
@@ -9,6 +28,7 @@ interface Store {
   viewMode: 'personal' | 'business';
   theme: 'light' | 'dark';
   isLoading: boolean;
+  lastSyncedAt: string | null;
   loadAccounts: () => Promise<void>;
   loadTransactions: () => Promise<void>;
   setSelectedMonth: (month: Date) => void;
@@ -17,12 +37,16 @@ interface Store {
 }
 
 export const useStore = create<Store>((set) => ({
-  accounts: [],
-  transactions: [],
+  accounts: readCache<Account[]>(ACCOUNTS_CACHE_KEY, []),
+  transactions: readCache<any[]>(TRANSACTIONS_CACHE_KEY, []).map((t: any) => ({
+    ...t,
+    transactionDate: t.transactionDate ? new Date(t.transactionDate) : new Date()
+  })),
   selectedMonth: new Date(),
   viewMode: 'personal',
   theme: (localStorage.getItem('app_theme') as 'light' | 'dark') || 'light',
-  isLoading: true,
+  isLoading: false,
+  lastSyncedAt: readCache<string | null>(LAST_SYNC_KEY, null),
   loadAccounts: async () => {
     set({ isLoading: true });
     try {
@@ -33,20 +57,23 @@ export const useStore = create<Store>((set) => ({
       
       const accounts = await getAccounts();
       console.log('[Store] loadAccounts success:', accounts);
-      set({ accounts, isLoading: false });
+      const syncedAt = new Date().toISOString();
+      writeCache(ACCOUNTS_CACHE_KEY, accounts);
+      writeCache(LAST_SYNC_KEY, syncedAt);
+      set({ accounts, isLoading: false, lastSyncedAt: syncedAt });
     } catch (err) {
       console.error('[Store] loadAccounts failed', err);
-      set({ accounts: [], isLoading: false });
+      set({ isLoading: false });
     }
   },
   loadTransactions: async () => {
     try {
       const transactions = await getTransactions();
       console.log('[Store] loadTransactions success:', transactions.length, 'transactions');
+      writeCache(TRANSACTIONS_CACHE_KEY, transactions);
       set({ transactions });
     } catch (err) {
       console.error('[Store] loadTransactions failed', err);
-      set({ transactions: [] });
     }
   },
   setSelectedMonth: (month: Date) => {

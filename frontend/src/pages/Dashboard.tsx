@@ -45,6 +45,25 @@ function getCardBackground(bankName: string) {
   return CARD_BACKGROUNDS[key] || CARD_BACKGROUNDS.default;
 }
 
+function getUpiCircleSpend(transactions: any[]) {
+  const grouped = new Map<string, { name: string; amount: number; count: number }>();
+
+  for (const tx of transactions) {
+    if (tx.type !== 'debit') continue;
+    const name = tx.receiverName || tx.merchantName || '';
+    if (!name || name === 'Transaction' || name === 'Statement Import') continue;
+    const key = name.trim().toUpperCase();
+    const current = grouped.get(key) || { name, amount: 0, count: 0 };
+    current.amount += Number(tx.amount || 0);
+    current.count += 1;
+    grouped.set(key, current);
+  }
+
+  return Array.from(grouped.values())
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 8);
+}
+
 const AccountDetailSheet = ({
   account,
   details,
@@ -184,7 +203,7 @@ const AccountDetailSheet = ({
 };
 
 export const Dashboard = () => {
-  const { accounts, transactions, selectedMonth, loadAccounts, loadTransactions, theme } = useStore();
+  const { accounts, transactions, selectedMonth, loadAccounts, loadTransactions, theme, lastSyncedAt } = useStore();
   const [budgetAlerts, setBudgetAlerts] = useState<Budget[]>([]);
   const [syncing, setSyncing] = useState(false);
 
@@ -234,6 +253,7 @@ export const Dashboard = () => {
   const recentTransactions = filterTransactionsByMonth(transactions, selectedMonth)
     .sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
     .slice(0, 5);
+  const upiCircleSpend = getUpiCircleSpend(filterTransactionsByMonth(transactions, selectedMonth));
 
   const [isAccountExpanded, setIsAccountExpanded] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any | null>(null);
@@ -294,7 +314,10 @@ export const Dashboard = () => {
       {/* Header */}
       <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Money Manager</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Money Manager</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {lastSyncedAt ? `Last synced ${new Date(lastSyncedAt).toLocaleString()}` : 'Showing cached data, sync in progress...'}
+          </p>
         </div>
         <div className="flex gap-3">
           <button
@@ -324,29 +347,29 @@ export const Dashboard = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-600 mb-2">Total Balance</p>
-          <h3 className="text-4xl font-bold text-gray-900">
+        <div className="rounded-2xl shadow-sm border border-emerald-500/20 bg-gradient-to-br from-emerald-500/15 via-slate-900 to-slate-900 p-6">
+          <p className="text-sm text-emerald-100/80 mb-2">Total Balance</p>
+          <h3 className="text-4xl font-bold text-white">
             {formatCurrency(totalBalance)}
           </h3>
-          <p className="text-xs text-gray-500 mt-2">Across all accounts</p>
+          <p className="text-xs text-emerald-100/70 mt-2">Across all accounts</p>
           <div className="mt-4">
-            <button onClick={openCashForm} className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg">Add Cash Spend</button>
+            <button onClick={openCashForm} className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-400 text-slate-950 font-semibold rounded-lg hover:bg-emerald-300 transition-colors">Add Cash Spend</button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-600 mb-2">Monthly Expense</p>
-          <h3 className="text-4xl font-bold text-red-600">
+        <div className="rounded-2xl shadow-sm border border-red-500/20 bg-gradient-to-br from-red-500/10 via-slate-900 to-slate-900 p-6">
+          <p className="text-sm text-red-100/80 mb-2">Monthly Expense</p>
+          <h3 className="text-4xl font-bold text-red-300">
             {formatCurrency(monthlyExpense)}
           </h3>
-          <p className="text-xs text-gray-500 mt-2">This month</p>
+          <p className="text-xs text-red-100/70 mt-2">This month</p>
         </div>
       </div>
 
       {/* Accounts horizontal carousel (primary visible, others swipeable) */}
       <div className="mb-6">
-        <p className="text-sm text-gray-600 mb-2">Accounts</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Accounts</p>
         <div className="flex gap-4 overflow-x-auto pb-2">
           {accounts.map((account) => {
             const isDark = theme === 'dark';
@@ -509,6 +532,34 @@ export const Dashboard = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* UPI Circle Spend - Modern chips/cards */}
+      <div className="mb-8 rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-slate-900 to-slate-900 p-4 md:p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-violet-100">UPI Circle</h3>
+          <span className="text-xs text-violet-200/80">Top people this month</span>
+        </div>
+        {upiCircleSpend.length === 0 ? (
+          <p className="text-sm text-violet-100/70">No UPI circle transactions found yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {upiCircleSpend.map((person) => (
+              <div key={person.name} className="rounded-xl border border-violet-400/20 bg-black/20 p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-violet-500/20 border border-violet-300/40 flex items-center justify-center text-violet-100 font-semibold">
+                    {person.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{person.name}</p>
+                    <p className="text-xs text-violet-100/70">{person.count} spends</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-base font-semibold text-violet-100">{formatCurrency(person.amount)}</p>
+              </div>
+            ))}
           </div>
         )}
       </div>

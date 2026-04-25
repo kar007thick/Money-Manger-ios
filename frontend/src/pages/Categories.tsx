@@ -60,48 +60,48 @@ export const Categories = () => {
   }, {} as Record<string, Category[]>);
 
   if (loading) {
-    return <div className="p-4 text-center">Loading categories...</div>;
+    return <div className="p-4 text-center text-gray-600 dark:text-gray-300">Loading categories...</div>;
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Categories</h2>
-          <p className="text-gray-600">Manage custom categories for auto-categorization.</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Categories</h2>
+          <p className="text-gray-600 dark:text-gray-300">Manage custom categories for auto-categorization.</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="bg-violet-500 text-white px-6 py-2 rounded-lg hover:bg-violet-400 transition"
         >
           {showForm ? 'Cancel' : 'Add Category'}
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-8">
           <form onSubmit={handleCreateCategory}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Category Name
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg"
                   placeholder="e.g., Coffee Shops"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Parent Category
                 </label>
                 <select
                   value={formData.parentCategory}
                   onChange={(e) => setFormData({ ...formData, parentCategory: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg"
                 >
                   <option value="">Select parent category</option>
                   {[
@@ -125,33 +125,33 @@ export const Categories = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Keywords (comma-separated)
               </label>
               <input
                 type="text"
                 value={formData.keywords}
                 onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg"
                 placeholder="e.g., starbucks, coffee, cafe"
               />
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Color
               </label>
               <input
                 type="color"
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-16 h-10 border border-gray-300 rounded-lg cursor-pointer"
+                className="w-16 h-10 border border-gray-300 dark:border-slate-700 rounded-lg cursor-pointer"
               />
             </div>
 
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              className="bg-violet-500 text-white px-6 py-2 rounded-lg hover:bg-violet-400 transition"
             >
               Create Category
             </button>
@@ -160,19 +160,19 @@ export const Categories = () => {
       )}
 
       {Object.keys(groupedCategories).length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <p className="text-gray-500">No custom categories yet</p>
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
+          <p className="text-gray-500 dark:text-gray-300">No custom categories yet</p>
         </div>
       ) : (
         <div className="space-y-8">
           {Object.entries(groupedCategories).map(([parentCat, cats]) => (
             <div key={parentCat}>
-              <h3 className="text-lg font-bold text-gray-900 mb-4">{parentCat}</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{parentCat}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {cats.map(cat => (
                   <div
                     key={cat.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
+                    className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4"
                   >
                     <div className="flex items-start gap-3 mb-3">
                       <div
@@ -180,8 +180,8 @@ export const Categories = () => {
                         style={{ backgroundColor: cat.color }}
                       />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">{cat.name}</h4>
-                        <p className="text-xs text-gray-500">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{cat.name}</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {cat.transactionCount} transactions
                         </p>
                       </div>
@@ -189,12 +189,12 @@ export const Categories = () => {
 
                     {(cat.keywords || []).length > 0 && (
                       <div className="mb-3">
-                        <p className="text-xs text-gray-600 mb-2">Keywords:</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">Keywords:</p>
                         <div className="flex flex-wrap gap-2">
                           {(cat.keywords || []).map(keyword => (
                             <span
                               key={keyword}
-                              className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                              className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 px-2 py-1 rounded"
                             >
                               {keyword}
                             </span>
@@ -203,8 +203,8 @@ export const Categories = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2 pt-3 border-t border-gray-100">
-                      <button className="text-sm text-blue-600 hover:text-blue-700">
+                    <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-slate-800">
+                      <button className="text-sm text-violet-600 dark:text-violet-300 hover:text-violet-700">
                         Edit
                       </button>
                       <button className="text-sm text-red-600 hover:text-red-700">
