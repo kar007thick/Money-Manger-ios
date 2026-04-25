@@ -92,15 +92,15 @@ export const Budgets = () => {
   };
 
   if (loading) {
-    return <div className="p-4 text-center">Loading budgets...</div>;
+    return <div className="p-4 text-center text-gray-600 dark:text-gray-300">Loading budgets...</div>;
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Budgets</h2>
-          <p className="text-gray-600">Track spending limits for each category.</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Budgets</h2>
+          <p className="text-gray-600 dark:text-gray-300">Track spending limits for each category.</p>
         </div>
         <button
           onClick={() => {
@@ -108,7 +108,7 @@ export const Budgets = () => {
             setFormData({ category: '', monthlyLimit: '' });
             setShowForm(!showForm);
           }}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="bg-violet-500 text-white px-6 py-2 rounded-lg hover:bg-violet-400 transition"
         >
           {showForm ? 'Cancel' : 'Add Budget'}
         </button>
@@ -136,18 +136,18 @@ export const Budgets = () => {
       )}
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-8">
           <form onSubmit={editingId ? handleUpdateBudget : handleCreateBudget}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Category
                 </label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   disabled={!!editingId}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg"
                 >
                   <option value="">Select category</option>
                   {[
@@ -169,21 +169,21 @@ export const Budgets = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Monthly Limit
                 </label>
                 <input
                   type="number"
                   value={formData.monthlyLimit}
                   onChange={(e) => setFormData({ ...formData, monthlyLimit: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg"
                   placeholder="5000"
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              className="bg-violet-500 text-white px-6 py-2 rounded-lg hover:bg-violet-400 transition"
             >
               {editingId ? 'Update' : 'Create'} Budget
             </button>
@@ -192,27 +192,27 @@ export const Budgets = () => {
       )}
 
       {budgets.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <p className="text-gray-500">No budgets created yet</p>
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
+          <p className="text-gray-500 dark:text-gray-300">No budgets created yet</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {budgets.map(budget => (
             <div
               key={budget.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition"
+              className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 hover:shadow-md transition"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">{budget.category}</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">{budget.category}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     {budget.transactionCount} transactions
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => startEdit(budget)}
-                    className="text-blue-600 hover:text-blue-700 text-sm"
+                    className="text-violet-600 dark:text-violet-300 hover:text-violet-700 text-sm"
                   >
                     Edit
                   </button>
@@ -227,12 +227,12 @@ export const Budgets = () => {
 
               <div className="mb-4">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">Spent</span>
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">Spent</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
                     {formatCurrency(budget.spent)} / {formatCurrency(budget.monthlyLimit)}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all ${getProgressColor(budget.percentage)}`}
                     style={{ width: `${Math.min(budget.percentage, 100)}%` }}
@@ -242,17 +242,17 @@ export const Budgets = () => {
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-xs text-gray-600">Used</p>
-                  <p className="text-lg font-bold text-gray-900">{budget.percentage}%</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">Used</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{budget.percentage}%</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Spent</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-xs text-gray-600 dark:text-gray-300">Spent</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
                     {formatCurrency(budget.spent)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Remaining</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">Remaining</p>
                   <p className={`text-lg font-bold ${budget.remaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
                     {formatCurrency(budget.remaining)}
                   </p>
